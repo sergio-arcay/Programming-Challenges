@@ -26,7 +26,7 @@ CONTENEDOR DE AGUA
 
     Información adicional:
 
-        - Usa el canal de nuestro Discord (https://mouredev.com/discord) "🔁 reto-semanal"
+        - Usa el canal de nuestro Discord (https://mouredev.com/discord) "🔁reto-semanal"
           para preguntas, dudas o prestar ayuda a la comunidad.
 
         - Tienes toda la información sobre los retos semanales en
@@ -62,11 +62,11 @@ def challenge45_v1(blocks):
 
     # Calculate the RESULT for the challenge:
     #
-    #       This line iterates over every block (left->right). Each block detects how many gaps exist thought its right,
-    #       until finding another block at higher or equal height. Each gap detected is equivalent to a potential water
+    #       This line iterates over every block (left->right). Each block detects how many gaps exist on its right,
+    #       until finding another block at higher or equal height. Each detected gap is equivalent to a potential water
     #       space.
     #
-    #       The iteration with the first column would be:
+    #       This iteration with the first column would be:
     #
     #           |O|---- --->|0|   | |
     #           |O|-->|0|   |0|   |0|    =>  1 + 0 + 0 = 1 (One gap on the right-hand side of the whole first column)
