@@ -36,3 +36,43 @@ Reto #46
           https://retosdeprogramacion.com/semanales2022.
 
 """
+import math
+
+
+class Robot:
+    def __init__(self, home_position=(0, 0), home_angle=math.pi / 2):
+        self._home = (home_position, home_angle)
+        self.position = home_position
+        self.view_angle = home_angle
+
+    def move(self, steps):
+        self.position = (
+            round(self.position[0] + steps * math.cos(self.view_angle), 2),
+            round(self.position[1] + steps * math.sin(self.view_angle), 2)
+        )
+        self.rotate(math.pi / 2)
+
+    def travel(self, route):
+        for steps in route:
+            self.move(steps)
+
+    def rotate(self, angle):
+        self.view_angle = (t - 2*math.pi) if (t := self.view_angle + angle) >= (2*math.pi) else t
+
+    def home(self):
+        self.position, self.view_angle = self._home
+
+
+if __name__ == '__main__':
+
+    inputs = {
+        "test_1": [10, 5, -2],  # (-5.0, 12.0)
+        "test_2": [2, -4, 0, 8, -8],  # (12.0, -6.0)
+    }
+
+    robot = Robot()
+
+    for k, v in inputs.items():
+        robot.travel(v)
+        print("{}: {}".format(k, robot.position))
+        robot.home()
