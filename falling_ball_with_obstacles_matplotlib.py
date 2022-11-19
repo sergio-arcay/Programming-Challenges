@@ -12,6 +12,14 @@ import matplotlib.animation as animation
 import matplotlib.colors as mcolors
 import random
 
+
+def generator_random_color():
+    colors = list(mcolors.TABLEAU_COLORS.values())
+    while 1:
+        for color in random.sample(colors, len(colors)):
+            yield color
+
+
 # Acceleration due to gravity
 g = 9.81
 
@@ -32,6 +40,9 @@ dt = 0.008
 # Interval
 interval = 1000*dt
 
+# Color generator
+random_colors = generator_random_color()
+
 
 class Ball:
     def __init__(self, x0: float, y0: float, vx0: float, vy0: float):
@@ -43,8 +54,10 @@ class Ball:
         self._y = self.y0
         self.vx = self.vx0
         self.vy = self.vy0
+        self.color = next(random_colors)
         self.plt_ball = plt.Circle(
-            xy=(self.x0, self.y0), radius=0.08, facecolor=random.choice(list(mcolors.TABLEAU_COLORS.values())))
+            xy=(self.x0, self.y0), radius=0.08, facecolor=self.color)
+        self.bounces_counter = 0
 
     def state(self, t=0):
         while self.energy:
@@ -58,12 +71,14 @@ class Ball:
 
             else:
                 self.vx = -self.vx * uw
+                self.bounces_counter += 1
 
             if 0 < self.y < YMAX:
                 self.vy = self.vy - dt * g - self.vy * uk
 
             else:
                 self.vy = -self.vy * uw
+                self.bounces_counter += 1
 
             if self.y == 0 or self.y == YMAX or self.x == 0 or self.x == XMAX:
                 self.vx -= self.vx * us
@@ -107,7 +122,7 @@ class Scenario:
         self.balls = balls
         self.fig = None
         self.ax = None
-        self.line = None
+        self.plt_bars = None
         self.xdata, self.ydata = [], []
         self.ani = None
 
@@ -116,10 +131,10 @@ class Scenario:
         self.fig, self.ax = plt.subplots()
         self.ax.set_aspect('equal')
         # These are the objects we need to keep track of.
-        self.line, = self.ax.plot([], [], lw=2)
         for ball in self.balls:
             self.ax.add_patch(ball.plt_ball)
-        self.ani = animation.FuncAnimation(self.fig, self._animate, self._state, blit=True, interval=interval, repeat=False, init_func=self._init)
+        self.ani = animation.FuncAnimation(
+            self.fig, self._animate, self._state, blit=False, interval=interval, repeat=False, init_func=self._init)
         return self
 
     def show(self):
@@ -136,7 +151,8 @@ class Scenario:
                     energetic_balls.remove(ball)
             yield self.balls
 
-        plt.close(self.fig)
+        self._finish()
+        yield self.balls
 
     def _init(self):
         """Initialize the animation figure."""
@@ -144,16 +160,24 @@ class Scenario:
         self.ax.set_ylim(0, YMAX)
         self.ax.set_xlabel('$x$ /m')
         self.ax.set_ylabel('$y$ /m')
-        self.line.set_data(self.xdata, self.ydata)
         for ball in self.balls:
             ball.plt_ball.set_center((ball.x, ball.y))
-        return self.line, *map(lambda b: b.plt_ball, self.balls)
+        return map(lambda b: b.plt_ball, self.balls)
 
     def _animate(self, balls):
         """For each frame, advance the animation to the new position, pos."""
         for ball in balls:
             ball.plt_ball.set_center((ball.x, ball.y))
-        return self.line, *map(lambda b: b.plt_ball, self.balls)
+        return *map(lambda b: b.plt_ball, self.balls), *([self.ax.axis, *self.plt_bars] if self.plt_bars else [])
+
+    def _finish(self):
+        self.ax.get_yaxis().set_visible(False)
+        max_bounces = max(ball.bounces_counter for ball in self.balls)
+        self.plt_bars = plt.bar(x=[ball.x for ball in self.balls],
+                                height=[(YMAX*ball.bounces_counter/max_bounces) for ball in self.balls],
+                                width=0.1,
+                                color=[ball.color for ball in self.balls],
+                                tick_label=[ball.bounces_counter for ball in self.balls])
 
 
 if __name__ == '__main__':
