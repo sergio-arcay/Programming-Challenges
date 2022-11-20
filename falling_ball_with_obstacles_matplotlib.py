@@ -34,6 +34,9 @@ uw = 0.8
 uk = 0.0004
 us = 0.05
 
+# Error distance
+dd = 0.001
+
 # The time step for the animation.
 dt = 0.008
 
@@ -45,7 +48,7 @@ random_colors = generator_random_color()
 
 
 class Ball:
-    def __init__(self, x0: float, y0: float, vx0: float, vy0: float):
+    def __init__(self, x0: float, y0: float, vx0: float, vy0: float, radius=0.08):
         self.x0 = max((min((XMAX-0.01, x0)), 0.01))
         self.y0 = max((min((YMAX-0.01, y0)), 0.01))
         self.vx0 = max((vx0, 0))
@@ -54,10 +57,12 @@ class Ball:
         self._y = self.y0
         self.vx = self.vx0
         self.vy = self.vy0
+        self.radius = radius
         self.color = next(random_colors)
         self.plt_ball = plt.Circle(
-            xy=(self.x0, self.y0), radius=0.08, facecolor=self.color)
+            xy=(self.x0, self.y0), radius=radius, facecolor=self.color)
         self.bounces_counter = 0
+        self.scenario = None
 
     def state(self, t=0):
         while self.energy:
@@ -84,11 +89,19 @@ class Ball:
                 self.vx -= self.vx * us
                 self.vy -= self.vy * us
 
+            if any(abs(self.x - ball.x) <= self.radius and abs(self.y - ball.y) <= self.radius for ball in self.scenario.balls if ball != self):
+                self.vx = -self.vx * uw
+                self.vy = -self.vy * uw
+                self.bounces_counter += 1
+
             yield self.energy
+
+    def set_scenario(self, ball_scenario):
+        self.scenario = ball_scenario
 
     @property
     def energy(self):
-        return E if (E := (self.y * g + 0.5*self.vy**2 + 0.5*self.vx**2)) >= 0.001 else 0
+        return E if (E := (self.y * g + 0.5*self.vy**2 + 0.5*self.vx**2)) >= dd else 0
 
     @property
     def x(self):
@@ -96,9 +109,9 @@ class Ball:
 
     @x.setter
     def x(self, value):
-        if value <= 0.001:
+        if value <= dd:
             self._x = 0
-        elif value >= XMAX - 0.001:
+        elif value >= XMAX - dd:
             self._x = XMAX
         else:
             self._x = value
@@ -109,9 +122,9 @@ class Ball:
 
     @y.setter
     def y(self, value):
-        if value <= 0.001:
+        if value <= dd:
             self._y = 0
-        elif value >= YMAX - 0.001:
+        elif value >= YMAX - dd:
             self._y = YMAX
         else:
             self._y = value
@@ -132,6 +145,7 @@ class Scenario:
         self.ax.set_aspect('equal')
         # These are the objects we need to keep track of.
         for ball in self.balls:
+            ball.set_scenario(self)
             self.ax.add_patch(ball.plt_ball)
         self.ani = animation.FuncAnimation(
             self.fig, self._animate, self._state, blit=False, interval=interval, repeat=False, init_func=self._init)
